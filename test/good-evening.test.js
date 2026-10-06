@@ -5,6 +5,7 @@ const { spawn } = require('node:child_process');
 const path = require('node:path');
 let server, closed, stdout = '', stderr = '';
 before(() => new Promise((resolve, reject) => {
+  for (const event of ['SIGINT', 'SIGTERM', 'uncaughtExceptionMonitor']) process.once(event, () => { server?.kill('SIGKILL'); process.exitCode = 1; });
   server = spawn(process.execPath, [path.join(__dirname, '..', 'server.js')]);
   server.on('error', reject);
   closed = new Promise((done) => server.on('close', done));
@@ -13,13 +14,12 @@ before(() => new Promise((resolve, reject) => {
   server.stderr?.on('data', (chunk) => { stderr += chunk; });
 }), { timeout: 5000 });
 after(async () => {
-  let forced = false;
-  const timer = setTimeout(() => { forced = true; server?.kill('SIGKILL'); }, 3000);
+  let forced = false, timer = setTimeout(() => { forced = true; server?.kill('SIGKILL'); }, 3000);
   server?.kill();
   await closed;
   clearTimeout(timer);
   assert.equal(forced, false, 'server did not close within 3000 ms of SIGTERM and was sent SIGKILL');
-  if (stdout.includes('Welcome to Blitzy\n')) assert.equal(stderr, '');
+  if (stdout.includes('Welcome to Blitzy\n')) assert.deepEqual({ stdout, stderr }, { stdout: 'Welcome to Blitzy\n', stderr: '' });
 }, { timeout: 5000 });
 describe('server startup', () => {
   it('starts without errors with both endpoints registered', () => {
