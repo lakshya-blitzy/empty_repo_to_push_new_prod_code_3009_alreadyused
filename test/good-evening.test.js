@@ -1,4 +1,4 @@
-/** Tests GET /good-evening, the preserved GET /hello route, server startup and unmatched URLs. */
+/** Spawns server.js because loading it binds port 3000 without exporting a server handle. */
 const { describe, it, before, after } = require('node:test');
 const assert = require('node:assert/strict');
 const { spawn } = require('node:child_process');
@@ -16,7 +16,7 @@ before(() => new Promise((resolve, reject) => {
   server.stdout?.on('data', (chunk) => { stdout += chunk; if (stdout.includes('Welcome to Blitzy\n')) resolve(); });
   server.stderr?.on('data', (chunk) => { stderr += chunk; });
 }), { timeout: 5000 });
-after(async () => { server?.kill(); await closed; if (stdout.includes('Welcome to Blitzy\n')) assert.equal(stderr, ''); }, { timeout: 5000 });
+after(async () => { let forced = false; const timer = setTimeout(() => { forced = true; server?.kill('SIGKILL'); }, 3000); server?.kill(); await closed; clearTimeout(timer); assert.equal(forced, false, 'server did not close within 3000 ms of SIGTERM and was sent SIGKILL'); if (stdout.includes('Welcome to Blitzy\n')) assert.equal(stderr, ''); }, { timeout: 5000 });
 
 describe('server startup', () => {
   it('starts without errors with both endpoints registered', () => {
