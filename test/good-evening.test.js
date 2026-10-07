@@ -10,7 +10,7 @@ let server, closed, stdout = '', stderr = '';
 
 before(() => new Promise((resolve, reject) => {
   // Neither an interrupt nor an uncaught exception may leave the child holding port 3000. Each signal
-  // listener runs once and is then removed, so re-raising the signal ends this process by that signal.
+  // listener is removed before its callback runs, so re-raising the signal ends this process by that signal.
   for (const signal of ['SIGINT', 'SIGTERM']) {
     process.once(signal, () => {
       server?.kill('SIGKILL');
