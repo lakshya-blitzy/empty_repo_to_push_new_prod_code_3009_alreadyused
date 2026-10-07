@@ -24,6 +24,7 @@ before(() => new Promise((resolve, reject) => {
   server = spawn(process.execPath, [path.join(__dirname, '..', 'server.js')]);
   server.on('error', reject);
   closed = new Promise((done) => server.on('close', done));
+  // Wait for 'close' so stderr is complete; once the server is ready this rejection is a no-op.
   server.on('exit', (code, signal) => closed.then(() => {
     reject(new Error(`server exited with code ${code}, signal ${signal}: ${stderr}`));
   }));
